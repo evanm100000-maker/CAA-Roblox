@@ -92,7 +92,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="request-actions">
                     <a href={airline.discordLink} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">Discord</a>
-                    <button onClick={() => updateRegisteredAirline(airline.id, { isReviewed: true })} className="btn btn-outline btn-sm" style={{ borderColor: '#10b981', color: '#10b981' }}>Mark as Reviewed</button>
+                    <button onClick={async () => await updateRegisteredAirline(airline.id, { isReviewed: true })} className="btn btn-outline btn-sm" style={{ borderColor: '#10b981', color: '#10b981' }}>Mark as Reviewed</button>
                     <button onClick={() => removeRegisteredAirline(airline.id)} className="btn btn-danger btn-sm">Remove</button>
                   </div>
                 </div>
@@ -117,7 +117,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="request-actions">
                     <a href={airline.discordLink} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">Discord</a>
-                    <button onClick={() => updateRegisteredAirline(airline.id, { isReviewed: false })} className="btn btn-outline btn-sm" style={{ borderColor: '#ef4444', color: '#ef4444' }}>UnReview</button>
+                    <button onClick={async () => await updateRegisteredAirline(airline.id, { isReviewed: false })} className="btn btn-outline btn-sm" style={{ borderColor: '#ef4444', color: '#ef4444' }}>UnReview</button>
                     <button onClick={() => removeRegisteredAirline(airline.id)} className="btn btn-danger btn-sm">Remove</button>
                   </div>
                 </div>

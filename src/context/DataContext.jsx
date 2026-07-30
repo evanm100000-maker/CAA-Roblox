@@ -6,6 +6,7 @@ import {
   push, 
   set,
   get,
+  update,
   remove, 
   serverTimestamp 
 } from 'firebase/database';
@@ -132,13 +133,12 @@ export const DataProvider = ({ children }) => {
   };
 
   const updateRegisteredAirline = async (id, updates) => {
-    const airlineRef = ref(database, `registeredAirlines/${id}`);
-    const snapshot = await get(airlineRef);
-    if (snapshot.exists()) {
-      await set(airlineRef, {
-        ...snapshot.val(),
-        ...updates
-      });
+    try {
+      const airlineRef = ref(database, `registeredAirlines/${id}`);
+      await update(airlineRef, updates);
+    } catch (error) {
+      console.error("Error updating airline:", error);
+      alert("Failed to update: " + error.message);
     }
   };
 
