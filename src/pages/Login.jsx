@@ -25,7 +25,7 @@ const Login = () => {
           navigate('/admin');
         }
       } else {
-        setError('Invalid credentials');
+        setError(res.error || 'Invalid credentials');
       }
     } catch (err) {
       console.error(err);

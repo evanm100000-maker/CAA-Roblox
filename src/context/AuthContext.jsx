@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { database } from '../firebase';
-import { ref, onValue, push, set, remove, update, get, query, orderByChild, equalTo } from 'firebase/database';
+import { initializeApp, getApps } from 'firebase/app';
+import { database, auth } from '../firebase';
+import { ref, onValue, set, remove, update, get } from 'firebase/database';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  updatePassword as authUpdatePassword,
+  getAuth
+} from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -35,47 +43,66 @@ export const AuthProvider = ({ children }) => {
   }, [isAuthenticated]);
 
   const login = async (email, password) => {
-    // 1. Check primary owner (always works even if DB is empty)
-    if (email.toLowerCase() === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
+    try {
+      let userCredential;
+      try {
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        // Auto-create owner account in Auth if they attempt first-time login
+        if (
+          email.toLowerCase() === 'evanm.100000@gmail.com' && 
+          password === 'Michelle11!' && 
+          (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')
+        ) {
+          userCredential = await createUserWithEmailAndPassword(auth, 'evanm.100000@gmail.com', 'Michelle11!');
+          const uid = userCredential.user.uid;
+          await set(ref(database, `admins/${uid}`), {
+            email: 'evanm.100000@gmail.com',
+            isTemp: false
+          });
+        } else {
+          throw err;
+        }
+      }
+
+      const user = userCredential.user;
+      
+      // Verify if user is in database admins list
+      const snap = await get(ref(database, `admins/${user.uid}`));
+      const adminData = snap.val();
+
+      if (!adminData) {
+        await signOut(auth);
+        return { success: false, error: 'You are not registered as an administrator.' };
+      }
+
+      if (adminData.isTemp) {
+        setCurrentEmail(email);
+        localStorage.setItem('adminEmail', email);
+        return { success: true, isTemp: true, adminId: user.uid };
+      }
+
       setIsAuthenticated(true);
       setCurrentEmail(email);
       localStorage.setItem('isAdmin', 'true');
       localStorage.setItem('adminEmail', email);
       return { success: true, isTemp: false };
-    }
 
-    // 2. Query RTDB admins only for the matching email to secure other accounts
-    try {
-      const adminsRef = ref(database, 'admins');
-      const q = query(adminsRef, orderByChild('email'), equalTo(email.trim()));
-      const snap = await get(q);
-      const data = snap.val();
-      
-      if (data) {
-        const key = Object.keys(data)[0];
-        const adminData = data[key];
-        
-        if (adminData.password === password) {
-          if (adminData.isTemp) {
-            setCurrentEmail(email);
-            localStorage.setItem('adminEmail', email);
-            return { success: true, isTemp: true, adminId: key };
-          } else {
-            setIsAuthenticated(true);
-            setCurrentEmail(email);
-            localStorage.setItem('isAdmin', 'true');
-            localStorage.setItem('adminEmail', email);
-            return { success: true, isTemp: false };
-          }
-        }
-      }
     } catch (err) {
-      console.error("Login verification failed:", err);
+      console.error("Login failed:", err);
+      let errorMsg = 'Invalid credentials';
+      if (err.code === 'auth/invalid-email') errorMsg = 'Invalid email address';
+      if (err.code === 'auth/user-disabled') errorMsg = 'This account has been disabled';
+      return { success: false, error: errorMsg };
     }
-    return { success: false };
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error(err);
+    }
     setIsAuthenticated(false);
     setCurrentEmail('');
     localStorage.removeItem('isAdmin');
@@ -83,10 +110,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   const addAdmin = async (email) => {
-    const newRef = push(ref(database, 'admins'));
-    await set(newRef, {
+    const secondaryApp = getApps().find(app => app.name === 'Secondary') 
+      || initializeApp(auth.app.options, 'Secondary');
+    
+    const secondaryAuth = getAuth(secondaryApp);
+    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email.trim(), 'password123');
+    const uid = userCredential.user.uid;
+    
+    await signOut(secondaryAuth);
+
+    await set(ref(database, `admins/${uid}`), {
       email: email.trim(),
-      password: 'password123',
       isTemp: true
     });
   };
@@ -96,8 +130,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updatePassword = async (adminId, newPassword) => {
+    if (auth.currentUser) {
+      await authUpdatePassword(auth.currentUser, newPassword);
+    }
     await update(ref(database, `admins/${adminId}`), {
-      password: newPassword,
       isTemp: false
     });
     setIsAuthenticated(true);
