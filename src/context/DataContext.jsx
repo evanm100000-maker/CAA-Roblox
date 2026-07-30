@@ -1,15 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { database } from '../firebase';
 import { 
-  collection, 
-  onSnapshot, 
-  addDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
-  orderBy,
+  ref, 
+  onValue, 
+  push, 
+  set,
+  remove, 
   serverTimestamp 
-} from 'firebase/firestore';
+} from 'firebase/database';
 
 const DataContext = createContext();
 
@@ -19,132 +17,117 @@ export const DataProvider = ({ children }) => {
   const [secondaryRequests, setSecondaryRequests] = useState([]);
   const [registeredAirlines, setRegisteredAirlines] = useState([]);
 
+  // Helper to convert RTDB object to sorted array
+  const objectToArray = (obj) => {
+    if (!obj) return [];
+    return Object.keys(obj).map(key => ({
+      id: key,
+      ...obj[key]
+    })).sort((a, b) => {
+      // Sort descending by createdAt
+      const timeA = a.createdAt || 0;
+      const timeB = b.createdAt || 0;
+      return timeB - timeA;
+    });
+  };
+
   // Fetch reviews
   useEffect(() => {
-    const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setReviews(data);
+    const reviewsRef = ref(database, 'reviews');
+    const unsubscribe = onValue(reviewsRef, (snapshot) => {
+      const data = snapshot.val();
+      setReviews(objectToArray(data));
     }, (error) => {
-      console.error("Error fetching reviews:", error);
-      // Fallback if index isn't built or permissions fail
-      if (error.code === 'failed-precondition') {
-        const simpleQ = collection(db, 'reviews');
-        onSnapshot(simpleQ, (snap) => setReviews(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-      }
+      console.error("Error fetching reviews from RTDB:", error);
     });
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
   // Fetch airlineRequests
   useEffect(() => {
-    const q = query(collection(db, 'airlineRequests'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setAirlineRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (error) => {
-      if (error.code === 'failed-precondition') {
-        onSnapshot(collection(db, 'airlineRequests'), (snap) => setAirlineRequests(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-      }
+    const reqRef = ref(database, 'airlineRequests');
+    const unsubscribe = onValue(reqRef, (snapshot) => {
+      const data = snapshot.val();
+      setAirlineRequests(objectToArray(data));
     });
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
   // Fetch secondaryRequests
   useEffect(() => {
-    const q = query(collection(db, 'secondaryRequests'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setSecondaryRequests(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (error) => {
-       if (error.code === 'failed-precondition') {
-         onSnapshot(collection(db, 'secondaryRequests'), (snap) => setSecondaryRequests(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-       }
+    const secReqRef = ref(database, 'secondaryRequests');
+    const unsubscribe = onValue(secReqRef, (snapshot) => {
+      const data = snapshot.val();
+      setSecondaryRequests(objectToArray(data));
     });
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
   // Fetch registeredAirlines
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'registeredAirlines'), (snapshot) => {
-      setRegisteredAirlines(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    const regRef = ref(database, 'registeredAirlines');
+    const unsubscribe = onValue(regRef, (snapshot) => {
+      const data = snapshot.val();
+      setRegisteredAirlines(objectToArray(data));
     });
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
   // Review actions
   const addReview = async (review) => {
-    await addDoc(collection(db, 'reviews'), {
+    const newRef = push(ref(database, 'reviews'));
+    await set(newRef, {
       ...review,
       createdAt: serverTimestamp()
     });
   };
 
   const deleteReview = async (id) => {
-    await deleteDoc(doc(db, 'reviews', id));
+    await remove(ref(database, `reviews/${id}`));
   };
 
   // New Airline Request actions
   const addAirlineRequest = async (request) => {
-    try {
-      await addDoc(collection(db, 'airlineRequests'), {
-        ...request,
-        createdAt: serverTimestamp()
-      });
-    } catch (e) {
-      console.error("Error adding request: ", e);
-    }
+    const newRef = push(ref(database, 'airlineRequests'));
+    await set(newRef, {
+      ...request,
+      createdAt: serverTimestamp()
+    });
   };
 
   const removeAirlineRequest = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'airlineRequests', id));
-    } catch (e) {
-      console.error("Error removing request: ", e);
-    }
+    await remove(ref(database, `airlineRequests/${id}`));
   };
 
   const approveAirlineRequest = async (request) => {
-    try {
-      // Add to registered
-      await addDoc(collection(db, 'registeredAirlines'), {
-        ...request,
-        approvedDate: new Date().toISOString()
-      });
-      // Remove from requests
-      if (request.id) {
-         await deleteDoc(doc(db, 'airlineRequests', request.id));
-      }
-    } catch (e) {
-      console.error("Error approving request: ", e);
+    // Add to registered
+    const newRef = push(ref(database, 'registeredAirlines'));
+    await set(newRef, {
+      ...request,
+      approvedDate: new Date().toISOString()
+    });
+    // Remove from requests
+    if (request.id) {
+       await remove(ref(database, `airlineRequests/${request.id}`));
     }
   };
 
   // Secondary Request actions
   const addSecondaryRequest = async (request) => {
-    try {
-      await addDoc(collection(db, 'secondaryRequests'), {
-        ...request,
-        createdAt: serverTimestamp()
-      });
-    } catch (e) {
-      console.error("Error adding secondary request: ", e);
-    }
+    const newRef = push(ref(database, 'secondaryRequests'));
+    await set(newRef, {
+      ...request,
+      createdAt: serverTimestamp()
+    });
   };
 
   const removeSecondaryRequest = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'secondaryRequests', id));
-    } catch (e) {
-      console.error("Error removing secondary request: ", e);
-    }
+    await remove(ref(database, `secondaryRequests/${id}`));
   };
 
   // Registered Airlines actions
   const removeRegisteredAirline = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'registeredAirlines', id));
-    } catch (e) {
-      console.error("Error removing registered airline: ", e);
-    }
+    await remove(ref(database, `registeredAirlines/${id}`));
   };
 
   return (
