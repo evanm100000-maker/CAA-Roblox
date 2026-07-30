@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { database } from '../firebase';
-import { ref, onValue, push, set, remove, update, get } from 'firebase/database';
+import { ref, onValue, push, set, remove, update, get, query, orderByChild, equalTo } from 'firebase/database';
 
 const AuthContext = createContext();
 
@@ -14,6 +14,10 @@ export const AuthProvider = ({ children }) => {
   const [admins, setAdmins] = useState([]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setAdmins([]);
+      return;
+    }
     const adminsRef = ref(database, 'admins');
     const unsubscribe = onValue(adminsRef, (snapshot) => {
       const data = snapshot.val();
@@ -28,11 +32,11 @@ export const AuthProvider = ({ children }) => {
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [isAuthenticated]);
 
   const login = async (email, password) => {
     // 1. Check primary owner (always works even if DB is empty)
-    if (email.toLowerCase() === 'evanm.100000@gmail.com' && password === 'Michelle11.') {
+    if (email.toLowerCase() === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
       setIsAuthenticated(true);
       setCurrentEmail(email);
       localStorage.setItem('isAdmin', 'true');
@@ -40,21 +44,22 @@ export const AuthProvider = ({ children }) => {
       return { success: true, isTemp: false };
     }
 
-    // 2. Query RTDB admins
+    // 2. Query RTDB admins only for the matching email to secure other accounts
     try {
-      const snap = await get(ref(database, 'admins'));
+      const adminsRef = ref(database, 'admins');
+      const q = query(adminsRef, orderByChild('email'), equalTo(email.trim()));
+      const snap = await get(q);
       const data = snap.val();
+      
       if (data) {
-        const list = Object.keys(data).map(key => ({
-          ...data[key],
-          id: key
-        }));
-        const foundAdmin = list.find(a => a.email.toLowerCase() === email.toLowerCase() && a.password === password);
-        if (foundAdmin) {
-          if (foundAdmin.isTemp) {
+        const key = Object.keys(data)[0];
+        const adminData = data[key];
+        
+        if (adminData.password === password) {
+          if (adminData.isTemp) {
             setCurrentEmail(email);
             localStorage.setItem('adminEmail', email);
-            return { success: true, isTemp: true, adminId: foundAdmin.id };
+            return { success: true, isTemp: true, adminId: key };
           } else {
             setIsAuthenticated(true);
             setCurrentEmail(email);
