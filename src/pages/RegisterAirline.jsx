@@ -22,6 +22,15 @@ const RegisterAirline = () => {
     setIsSubmitting(true);
     
     try {
+      let userIp = 'Unknown';
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        userIp = ipData.ip;
+      } catch (e) {
+        console.error("Failed to fetch IP", e);
+      }
+
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error("Timeout")), 10000)
       );
@@ -31,7 +40,8 @@ const RegisterAirline = () => {
           ...formData,
           status: 'pending',
           requestType: 'registration',
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          ipAddress: userIp
         }),
         timeoutPromise
       ]);

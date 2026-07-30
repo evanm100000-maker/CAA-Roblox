@@ -53,7 +53,10 @@ const AdminDashboard = () => {
                 <div key={request.id} className="request-item">
                   <div className="request-header">
                     <h3 className="request-airline">{request.airlineName}</h3>
-                    <span className="request-date">{new Date(request.date).toLocaleDateString()}</span>
+                    <span className="request-date">
+                      {new Date(request.date).toLocaleDateString()}
+                      {request.ipAddress && <span style={{ marginLeft: '1rem', color: '#ef4444' }}>IP: {request.ipAddress}</span>}
+                    </span>
                   </div>
                   {request.details && <p className="request-reason">{request.details}</p>}
                   <div className="request-actions">
@@ -79,7 +82,10 @@ const AdminDashboard = () => {
                 <div key={request.id} className="request-item">
                   <div className="request-header">
                     <h3 className="request-airline">{request.airlineName}</h3>
-                    <span className="request-date">{new Date(request.date).toLocaleDateString()}</span>
+                    <span className="request-date">
+                      {new Date(request.date).toLocaleDateString()}
+                      {request.ipAddress && <span style={{ marginLeft: '1rem', color: '#ef4444' }}>IP: {request.ipAddress}</span>}
+                    </span>
                   </div>
                   {request.details && <p className="request-reason">{request.details}</p>}
                   <div className="request-actions">
@@ -105,7 +111,10 @@ const AdminDashboard = () => {
                 <div key={request.id} className="request-item">
                   <div className="request-header">
                     <h3 className="request-airline">{request.airlineName}</h3>
-                    <span className="request-date">{new Date(request.date).toLocaleDateString()}</span>
+                    <span className="request-date">
+                      {new Date(request.date).toLocaleDateString()}
+                      {request.ipAddress && <span style={{ marginLeft: '1rem', color: '#ef4444' }}>IP: {request.ipAddress}</span>}
+                    </span>
                   </div>
                   <p className="request-reason">{request.reason}</p>
                   <div className="request-actions">

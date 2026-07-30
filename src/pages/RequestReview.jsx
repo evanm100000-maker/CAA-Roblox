@@ -23,6 +23,15 @@ const RequestReview = () => {
     setIsSubmitting(true);
     
     try {
+      let userIp = 'Unknown';
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        userIp = ipData.ip;
+      } catch (e) {
+        console.error("Failed to fetch IP", e);
+      }
+
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error("Timeout")), 10000)
       );
@@ -32,7 +41,8 @@ const RequestReview = () => {
           ...formData,
           status: 'pending',
           requestType: 'initial_review',
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          ipAddress: userIp
         }),
         timeoutPromise
       ]);
