@@ -31,6 +31,7 @@ const RequestReview = () => {
         addAirlineRequest({
           ...formData,
           status: 'pending',
+          requestType: 'initial_review',
           date: new Date().toISOString()
         }),
         timeoutPromise

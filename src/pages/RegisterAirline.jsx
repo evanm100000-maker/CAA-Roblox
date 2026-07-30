@@ -30,6 +30,7 @@ const RegisterAirline = () => {
         addAirlineRequest({
           ...formData,
           status: 'pending',
+          requestType: 'registration',
           date: new Date().toISOString()
         }),
         timeoutPromise

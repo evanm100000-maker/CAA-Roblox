@@ -11,9 +11,13 @@ const AdminDashboard = () => {
     removeSecondaryRequest,
     registeredAirlines,
     removeRegisteredAirline,
+    markAirlineAsReviewed,
     reviews,
     deleteReview
   } = useData();
+
+  const newAirlineRequests = airlineRequests.filter(req => req.requestType === 'registration');
+  const initialReviewRequests = airlineRequests.filter(req => req.requestType !== 'registration');
 
   return (
     <div className="container animate-fade-in dashboard-container">
@@ -22,13 +26,39 @@ const AdminDashboard = () => {
       <div className="dashboard-grid">
         {/* New Airline Requests */}
         <div className="card dashboard-card">
-          <h2 className="dashboard-card-title">New Airline / Review Requests</h2>
+          <h2 className="dashboard-card-title">New Airline Registrations</h2>
           
-          {airlineRequests.length === 0 ? (
-            <p className="empty-message">No pending requests.</p>
+          {newAirlineRequests.length === 0 ? (
+            <p className="empty-message">No pending registrations.</p>
           ) : (
             <div className="request-list">
-              {airlineRequests.map(request => (
+              {newAirlineRequests.map(request => (
+                <div key={request.id} className="request-item">
+                  <div className="request-header">
+                    <h3 className="request-airline">{request.airlineName}</h3>
+                    <span className="request-date">{new Date(request.date).toLocaleDateString()}</span>
+                  </div>
+                  {request.details && <p className="request-reason">{request.details}</p>}
+                  <div className="request-actions">
+                    <a href={request.discordLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">Discord</a>
+                    <button onClick={() => approveAirlineRequest(request)} className="btn btn-primary btn-sm" style={{ backgroundColor: '#10b981', borderColor: '#10b981' }}>Approve & Register</button>
+                    <button onClick={() => removeAirlineRequest(request.id)} className="btn btn-outline btn-sm">Dismiss</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Initial Review Requests */}
+        <div className="card dashboard-card">
+          <h2 className="dashboard-card-title">Initial Review Requests</h2>
+          
+          {initialReviewRequests.length === 0 ? (
+            <p className="empty-message">No pending review requests.</p>
+          ) : (
+            <div className="request-list">
+              {initialReviewRequests.map(request => (
                 <div key={request.id} className="request-item">
                   <div className="request-header">
                     <h3 className="request-airline">{request.airlineName}</h3>
@@ -80,14 +110,20 @@ const AdminDashboard = () => {
           ) : (
             <div className="request-list">
               {registeredAirlines.map(airline => (
-                <div key={airline.id} className="request-item">
+                <div key={airline.id} className="request-item" style={{ borderLeft: airline.isReviewed ? '4px solid #10b981' : 'none' }}>
                   <div className="request-header">
-                    <h3 className="request-airline">{airline.airlineName}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <h3 className="request-airline">{airline.airlineName}</h3>
+                      {airline.isReviewed && <span style={{ backgroundColor: '#10b981', color: 'white', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 'bold' }}>Reviewed</span>}
+                    </div>
                     <span className="request-date">Approved: {airline.approvedDate ? new Date(airline.approvedDate).toLocaleDateString() : 'N/A'}</span>
                   </div>
                   <div className="request-actions">
                     <a href={airline.discordLink} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">Discord</a>
-                    <button onClick={() => removeRegisteredAirline(airline.id)} className="btn btn-danger btn-sm">Remove</button>
+                    {!airline.isReviewed && (
+                      <button onClick={() => markAirlineAsReviewed(airline.id)} className="btn btn-outline btn-sm" style={{ borderColor: '#10b981', color: '#10b981' }}>Mark as Reviewed</button>
+                    )}
+                    <button onClick={() => removeRegisteredAirline(airline.id)} className="btn btn-danger btn-sm">Delete</button>
                   </div>
                 </div>
               ))}

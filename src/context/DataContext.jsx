@@ -5,6 +5,7 @@ import {
   onValue, 
   push, 
   set,
+  update,
   remove, 
   serverTimestamp 
 } from 'firebase/database';
@@ -130,12 +131,18 @@ export const DataProvider = ({ children }) => {
     await remove(ref(database, `registeredAirlines/${id}`));
   };
 
+  const markAirlineAsReviewed = async (id) => {
+    await update(ref(database, `registeredAirlines/${id}`), {
+      isReviewed: true
+    });
+  };
+
   return (
     <DataContext.Provider value={{
       reviews, addReview, deleteReview,
       airlineRequests, addAirlineRequest, removeAirlineRequest, approveAirlineRequest,
       secondaryRequests, addSecondaryRequest, removeSecondaryRequest,
-      registeredAirlines, removeRegisteredAirline
+      registeredAirlines, removeRegisteredAirline, markAirlineAsReviewed
     }}>
       {children}
     </DataContext.Provider>
