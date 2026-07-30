@@ -43,14 +43,20 @@ const PostReview = () => {
     let uploadedImageUrl = '';
     
     try {
-      if (imageFile) {
-        // Create a reference to the file in Firebase Storage
-        const imageRef = ref(storage, `reviews/${Date.now()}_${imageFile.name}`);
-        // Upload the file
-        await uploadBytes(imageRef, imageFile);
-        // Get the download URL
-        uploadedImageUrl = await getDownloadURL(imageRef);
-      }
+      const uploadAndSave = async () => {
+        if (imageFile) {
+          // Create a reference to the file in Firebase Storage
+          const imageRef = ref(storage, `reviews/${Date.now()}_${imageFile.name}`);
+          // Upload the file
+          await uploadBytes(imageRef, imageFile);
+          // Get the download URL
+          uploadedImageUrl = await getDownloadURL(imageRef);
+        }
+        await addReview({
+          ...formData,
+          imageUrl: uploadedImageUrl
+        });
+      };
 
       // Timeout to prevent infinite hanging if Firebase fails silently
       const timeoutPromise = new Promise((_, reject) => 
@@ -58,10 +64,7 @@ const PostReview = () => {
       );
 
       await Promise.race([
-        addReview({
-          ...formData,
-          imageUrl: uploadedImageUrl
-        }),
+        uploadAndSave(),
         timeoutPromise
       ]);
       
