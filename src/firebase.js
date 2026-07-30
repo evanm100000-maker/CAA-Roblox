@@ -6,7 +6,7 @@ import { getStorage } from "firebase/storage";
 const firebaseConfig = {
   apiKey: "AIzaSyARGJBeUF0pdY4nBnjtAZJLj3T4QKAFvsE",
   authDomain: "faa-roblox.firebaseapp.com",
-  databaseURL: "https://faa-roblox-default-rtdb.firebaseio.com",
+  databaseURL: "https://faa-roblox-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "faa-roblox",
   storageBucket: "faa-roblox.firebasestorage.app",
   messagingSenderId: "152962450215",
