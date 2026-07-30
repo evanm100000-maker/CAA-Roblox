@@ -236,7 +236,7 @@ const PostReview = () => {
                 onChange={handleChange}
                 required
               >
-                <option value="Exceptional">Exceptional</option>
+                <option value="Outstanding">Outstanding</option>
                 <option value="Great">Great</option>
                 <option value="Good">Good</option>
                 <option value="Needs Improvement">Needs Improvement</option>
