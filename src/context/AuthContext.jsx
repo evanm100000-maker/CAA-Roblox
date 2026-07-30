@@ -90,7 +90,14 @@ export const AuthProvider = ({ children }) => {
         const ipData = await ipRes.json();
         userIp = ipData.ip;
       } catch (e) {
-        console.error("Failed to fetch IP", e);
+        console.error("Failed to fetch IP from ipify, trying fallback...", e);
+        try {
+          const ipRes = await fetch('https://ipapi.co/json/');
+          const ipData = await ipRes.json();
+          userIp = ipData.ip;
+        } catch (e2) {
+          console.error("Failed to fetch IP from fallback api", e2);
+        }
       }
 
       try {
@@ -167,7 +174,7 @@ export const AuthProvider = ({ children }) => {
     const snap = await get(ref(database, `admins/${adminId}`));
     const data = snap.val() || {};
     const recognizedIps = data.recognizedIps || [];
-    if (ip && !recognizedIps.includes(ip)) recognizedIps.push(ip);
+    if (ip && ip !== 'Unknown' && !recognizedIps.includes(ip)) recognizedIps.push(ip);
 
     await update(ref(database, `admins/${adminId}`), {
       isTemp: false,
@@ -183,7 +190,7 @@ export const AuthProvider = ({ children }) => {
     const snap = await get(ref(database, `admins/${adminId}`));
     const data = snap.val() || {};
     const recognizedIps = data.recognizedIps || [];
-    if (ip && !recognizedIps.includes(ip)) recognizedIps.push(ip);
+    if (ip && ip !== 'Unknown' && !recognizedIps.includes(ip)) recognizedIps.push(ip);
 
     await update(ref(database, `admins/${adminId}`), {
       securityQuestion,
@@ -201,7 +208,7 @@ export const AuthProvider = ({ children }) => {
 
     if (data.securityAnswer === answer.toLowerCase().trim()) {
       const recognizedIps = data.recognizedIps || [];
-      if (ip && !recognizedIps.includes(ip)) recognizedIps.push(ip);
+      if (ip && ip !== 'Unknown' && !recognizedIps.includes(ip)) recognizedIps.push(ip);
       await update(ref(database, `admins/${adminId}`), {
         recognizedIps
       });

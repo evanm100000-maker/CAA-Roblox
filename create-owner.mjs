@@ -26,7 +26,7 @@ async function createOwner() {
     console.log("Adding owner to Realtime Database admins list...");
     await set(ref(database, `admins/${uid}`), {
       email: 'evanm.100000@gmail.com',
-      isTemp: false
+      isTemp: true
     });
     console.log("Successfully added admin record.");
 
@@ -42,7 +42,7 @@ async function createOwner() {
         const uid = userCredential.user.uid;
         await set(ref(database, `admins/${uid}`), {
           email: 'evanm.100000@gmail.com',
-          isTemp: false
+          isTemp: true
         });
         console.log("Successfully added admin record for existing user.");
       } catch (signInError) {

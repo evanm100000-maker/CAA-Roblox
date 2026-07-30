@@ -26,7 +26,7 @@ async function checkAdmins() {
     console.log("Setting admin record...");
     await set(ref(database, `admins/${uid}`), {
       email: 'evanm.100000@gmail.com',
-      isTemp: false
+      isTemp: true
     });
     console.log("Set succeeded!");
 

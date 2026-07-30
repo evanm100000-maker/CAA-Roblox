@@ -36,8 +36,8 @@ const CreatePassword = () => {
       return;
     }
 
-    if (!securityAnswer.trim()) {
-      setError('Please provide an answer to your security question');
+    if (securityAnswer.trim().length < 3) {
+      setError('Security answer must be at least 3 characters long');
       return;
     }
 
@@ -49,7 +49,14 @@ const CreatePassword = () => {
         const ipData = await ipRes.json();
         userIp = ipData.ip;
       } catch (e) {
-        console.error("Failed to fetch IP", e);
+        console.error("Failed to fetch IP from ipify, trying fallback...", e);
+        try {
+          const ipRes = await fetch('https://ipapi.co/json/');
+          const ipData = await ipRes.json();
+          userIp = ipData.ip;
+        } catch (e2) {
+          console.error("Failed to fetch IP from fallback api", e2);
+        }
       }
 
       await updatePassword(adminId, password, securityQuestion, securityAnswer, userIp);
