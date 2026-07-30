@@ -9,6 +9,7 @@ import ReviewDetail from './pages/ReviewDetail';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import PostReview from './pages/PostReview';
+import CreatePassword from './pages/CreatePassword';
 import { useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
@@ -31,6 +32,7 @@ function App() {
           <Route path="/request-secondary-review" element={<RequestSecondaryReview />} />
           <Route path="/review/:id" element={<ReviewDetail />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/create-password" element={<CreatePassword />} />
           
           <Route path="/admin" element={
             <ProtectedRoute>

@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { database } from '../firebase';
+import { ref, onValue, push, set, remove, update, get } from 'firebase/database';
 
 const AuthContext = createContext();
 
@@ -6,23 +8,99 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('isAdmin') === 'true';
   });
+  const [currentEmail, setCurrentEmail] = useState(() => {
+    return localStorage.getItem('adminEmail') || '';
+  });
+  const [admins, setAdmins] = useState([]);
 
-  const login = (email, password) => {
-    if (email === 'evanm.100000@gmail.com' && password === 'Michelle11.') {
+  useEffect(() => {
+    const adminsRef = ref(database, 'admins');
+    const unsubscribe = onValue(adminsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list = Object.keys(data).map(key => ({
+          ...data[key],
+          id: key
+        }));
+        setAdmins(list);
+      } else {
+        setAdmins([]);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const login = async (email, password) => {
+    // 1. Check primary owner (always works even if DB is empty)
+    if (email.toLowerCase() === 'evanm.100000@gmail.com' && password === 'Michelle11.') {
       setIsAuthenticated(true);
+      setCurrentEmail(email);
       localStorage.setItem('isAdmin', 'true');
-      return true;
+      localStorage.setItem('adminEmail', email);
+      return { success: true, isTemp: false };
     }
-    return false;
+
+    // 2. Query RTDB admins
+    try {
+      const snap = await get(ref(database, 'admins'));
+      const data = snap.val();
+      if (data) {
+        const list = Object.keys(data).map(key => ({
+          ...data[key],
+          id: key
+        }));
+        const foundAdmin = list.find(a => a.email.toLowerCase() === email.toLowerCase() && a.password === password);
+        if (foundAdmin) {
+          if (foundAdmin.isTemp) {
+            setCurrentEmail(email);
+            localStorage.setItem('adminEmail', email);
+            return { success: true, isTemp: true, adminId: foundAdmin.id };
+          } else {
+            setIsAuthenticated(true);
+            setCurrentEmail(email);
+            localStorage.setItem('isAdmin', 'true');
+            localStorage.setItem('adminEmail', email);
+            return { success: true, isTemp: false };
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Login verification failed:", err);
+    }
+    return { success: false };
   };
 
   const logout = () => {
     setIsAuthenticated(false);
+    setCurrentEmail('');
     localStorage.removeItem('isAdmin');
+    localStorage.removeItem('adminEmail');
+  };
+
+  const addAdmin = async (email) => {
+    const newRef = push(ref(database, 'admins'));
+    await set(newRef, {
+      email: email.trim(),
+      password: 'password123',
+      isTemp: true
+    });
+  };
+
+  const removeAdmin = async (id) => {
+    await remove(ref(database, `admins/${id}`));
+  };
+
+  const updatePassword = async (adminId, newPassword) => {
+    await update(ref(database, `admins/${adminId}`), {
+      password: newPassword,
+      isTemp: false
+    });
+    setIsAuthenticated(true);
+    localStorage.setItem('isAdmin', 'true');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, currentEmail, admins, login, logout, addAdmin, removeAdmin, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

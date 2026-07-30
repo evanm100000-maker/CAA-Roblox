@@ -9,13 +9,29 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const success = login(email, password);
-    if (success) {
-      navigate('/admin');
-    } else {
-      setError('Invalid credentials');
+    setError('');
+    setIsSubmitting(true);
+    
+    try {
+      const res = await login(email, password);
+      if (res.success) {
+        if (res.isTemp) {
+          navigate('/create-password', { state: { adminId: res.adminId, email } });
+        } else {
+          navigate('/admin');
+        }
+      } else {
+        setError('Invalid credentials');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('An error occurred during sign in');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -55,8 +71,8 @@ const Login = () => {
             />
           </div>
           
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
-            Sign In
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={isSubmitting}>
+            {isSubmitting ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
       </div>

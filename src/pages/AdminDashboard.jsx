@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -15,6 +16,22 @@ const AdminDashboard = () => {
     reviews,
     deleteReview
   } = useData();
+
+  const { admins, addAdmin, removeAdmin } = useAuth();
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+
+  const handleAddAdmin = async (e) => {
+    e.preventDefault();
+    if (!newAdminEmail.trim()) return;
+    try {
+      await addAdmin(newAdminEmail);
+      setNewAdminEmail('');
+      alert('Admin added successfully with temporary password "password123"!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to add admin.');
+    }
+  };
 
   const newAirlineRequests = airlineRequests.filter(req => req.requestType === 'registration');
   const initialReviewRequests = airlineRequests.filter(req => req.requestType !== 'registration');
@@ -156,6 +173,47 @@ const AdminDashboard = () => {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Manage Admins */}
+        <div className="card dashboard-card">
+          <h2 className="dashboard-card-title">Manage Admins</h2>
+          
+          {/* Add Admin Form */}
+          <form onSubmit={handleAddAdmin} style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem' }}>
+            <input
+              type="email"
+              placeholder="Admin Email Address"
+              className="form-input"
+              style={{ flex: 1, margin: 0 }}
+              value={newAdminEmail}
+              onChange={(e) => setNewAdminEmail(e.target.value)}
+              required
+            />
+            <button type="submit" className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>Add Admin</button>
+          </form>
+
+          {/* Admins List */}
+          <div className="request-list">
+            {/* Primary Owner is always shown first */}
+            <div className="request-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="request-header" style={{ marginBottom: 0 }}>
+                <h3 className="request-airline">evanm.100000@gmail.com</h3>
+                <span className="request-date" style={{ marginLeft: '1rem' }}>Primary Owner</span>
+              </div>
+              <button className="btn btn-outline btn-sm" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>System</button>
+            </div>
+
+            {admins.filter(a => a.email.toLowerCase() !== 'evanm.100000@gmail.com').map(admin => (
+              <div key={admin.id} className="request-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="request-header" style={{ marginBottom: 0 }}>
+                  <h3 className="request-airline">{admin.email}</h3>
+                  {admin.isTemp && <span style={{ marginLeft: '0.5rem', backgroundColor: '#eab308', color: 'black', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.7rem', fontWeight: 'bold' }}>Temp Password</span>}
+                </div>
+                <button onClick={() => removeAdmin(admin.id)} className="btn btn-danger btn-sm">Remove</button>
+              </div>
+            ))}
+          </div>
         </div>
         
       </div>
