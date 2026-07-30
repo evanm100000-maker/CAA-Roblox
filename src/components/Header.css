@@ -133,7 +133,6 @@
   min-width: 200px;
   z-index: 60;
   margin-top: 0;
-  overflow: hidden;
 }
 
 .dropdown-menu::before {

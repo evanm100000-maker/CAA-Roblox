@@ -16,15 +16,15 @@ const Home = () => {
     <div className="home-page animate-fade-in">
       <section className="hero-section">
         <div className="container hero-content">
-          <h1 className="hero-title">Official Airline Certification & Review</h1>
+          <h1 className="hero-title">Civil Aviation Authority Roblox</h1>
           <p className="hero-subtitle">
             Civil Aviation Authority Roblox is the leading airline evaluation group on the platform, specialising in assessing carriers on key standards such as safety, professionalism, and realism.
           </p>
           <div className="hero-actions">
-            <Link to="/request-review" className="btn btn-primary btn-lg">
-              Request an Initial Review
+            <Link to="/register-airline" className="btn btn-primary btn-lg">
+              Register Your Airline
             </Link>
-            <Link to="/request-secondary-review" className="btn btn-outline btn-lg hero-outline-btn">
+            <Link to="/request-review" className="btn btn-outline btn-lg hero-outline-btn">
               Request Review
             </Link>
           </div>
