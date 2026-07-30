@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import { containsProfanity } from '../utils/profanityFilter';
 
 const RegisterAirline = () => {
   const [formData, setFormData] = useState({
@@ -20,6 +21,13 @@ const RegisterAirline = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    const hasBadWords = Object.values(formData).some(val => typeof val === 'string' && containsProfanity(val));
+    if (hasBadWords) {
+      alert("Please keep it clean! Inappropriate language is not allowed.");
+      setIsSubmitting(false);
+      return;
+    }
     
     try {
       let userIp = 'Unknown';

@@ -21,6 +21,10 @@ const Login = () => {
       if (res.success) {
         if (res.isTemp) {
           navigate('/create-password', { state: { adminId: res.adminId, email } });
+        } else if (res.requiresSetup) {
+          navigate('/setup-security', { state: { adminId: res.adminId, email } });
+        } else if (res.requiresChallenge) {
+          navigate('/security-challenge', { state: { adminId: res.adminId, email, ip: res.ip } });
         } else {
           navigate('/admin');
         }

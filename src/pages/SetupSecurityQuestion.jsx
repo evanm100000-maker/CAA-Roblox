@@ -2,16 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const CreatePassword = () => {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+const SetupSecurityQuestion = () => {
   const [securityQuestion, setSecurityQuestion] = useState('What was the name of your first pet?');
   const [securityAnswer, setSecurityAnswer] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { updatePassword } = useAuth();
+  const { setupSecurityQuestion } = useAuth();
 
   const state = location.state || {};
   const { adminId, email } = state;
@@ -26,16 +24,6 @@ const CreatePassword = () => {
     e.preventDefault();
     setError('');
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
     if (!securityAnswer.trim()) {
       setError('Please provide an answer to your security question');
       return;
@@ -48,15 +36,15 @@ const CreatePassword = () => {
         const ipRes = await fetch('https://api.ipify.org?format=json');
         const ipData = await ipRes.json();
         userIp = ipData.ip;
-      } catch (e) {
-        console.error("Failed to fetch IP", e);
+      } catch (err) {
+        console.error("Failed to fetch IP", err);
       }
 
-      await updatePassword(adminId, password, securityQuestion, securityAnswer, userIp);
+      await setupSecurityQuestion(adminId, securityQuestion, securityAnswer, userIp);
       navigate('/admin');
     } catch (err) {
       console.error(err);
-      setError('Failed to update password. Please try again.');
+      setError('Failed to save security question. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -67,9 +55,9 @@ const CreatePassword = () => {
   return (
     <div className="container animate-fade-in" style={{ maxWidth: '400px', marginTop: '4rem' }}>
       <div className="card">
-        <h1 className="section-title text-center" style={{ fontSize: '1.75rem', marginBottom: '1rem' }}>Create Password</h1>
+        <h1 className="section-title text-center" style={{ fontSize: '1.75rem', marginBottom: '1rem' }}>Security Update</h1>
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '0.9rem' }}>
-          Please set a new password for <strong>{email}</strong>
+          Welcome back <strong>{email}</strong>! We've added a new security feature. Please set up a security question to protect your account from unrecognized locations.
         </p>
 
         {error && (
@@ -79,38 +67,6 @@ const CreatePassword = () => {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">New Password</label>
-            <input
-              type="password"
-              id="password"
-              className="form-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Min 6 characters"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirmPassword" className="form-label">Confirm New Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              className="form-input"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <hr style={{ margin: '2rem 0', borderColor: 'var(--border)' }} />
-          
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Security Question</h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-            This question will be used to verify your identity if you log in from a new IP address or location.
-          </p>
-
           <div className="form-group">
             <label htmlFor="securityQuestion" className="form-label">Select a Question</label>
             <select
@@ -141,7 +97,7 @@ const CreatePassword = () => {
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving Password...' : 'Save Password'}
+            {isSubmitting ? 'Saving...' : 'Save & Continue'}
           </button>
         </form>
       </div>
@@ -149,4 +105,4 @@ const CreatePassword = () => {
   );
 };
 
-export default CreatePassword;
+export default SetupSecurityQuestion;

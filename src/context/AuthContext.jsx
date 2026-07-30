@@ -28,6 +28,18 @@ export const AuthProvider = ({ children }) => {
     setPersistence(auth, browserSessionPersistence).catch(console.error);
   }, []);
 
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error(err);
+    }
+    setIsAuthenticated(false);
+    setCurrentEmail('');
+    sessionStorage.removeItem('isAdmin');
+    sessionStorage.removeItem('adminEmail');
+  };
+
   useEffect(() => {
     if (!isAuthenticated) {
       setAdmins([]);
@@ -42,12 +54,22 @@ export const AuthProvider = ({ children }) => {
           id: key
         }));
         setAdmins(list);
+        
+        // Auto-kick if current admin was removed
+        if (currentEmail) {
+          const stillAdmin = list.some(a => a.email.toLowerCase() === currentEmail.toLowerCase());
+          if (!stillAdmin) {
+            console.log("Admin account removed. Forcing logout.");
+            logout();
+          }
+        }
       } else {
         setAdmins([]);
+        if (currentEmail) logout();
       }
     });
     return () => unsubscribe();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currentEmail]);
 
   const login = async (email, password) => {
     try {
@@ -86,6 +108,21 @@ export const AuthProvider = ({ children }) => {
         return { success: true, isTemp: true, adminId: uid };
       }
 
+      const recognizedIps = adminData.recognizedIps || [];
+      const hasSecurityQuestion = !!adminData.securityQuestion;
+
+      if (!hasSecurityQuestion) {
+        setCurrentEmail(email);
+        sessionStorage.setItem('adminEmail', email);
+        return { success: true, requiresSetup: true, adminId: uid };
+      }
+
+      if (!recognizedIps.includes(userIp)) {
+        setCurrentEmail(email);
+        sessionStorage.setItem('adminEmail', email);
+        return { success: true, requiresChallenge: true, adminId: uid, ip: userIp };
+      }
+
       setIsAuthenticated(true);
       setCurrentEmail(email);
       sessionStorage.setItem('isAdmin', 'true');
@@ -101,17 +138,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
-    try {
-      await signOut(auth);
-    } catch (err) {
-      console.error(err);
-    }
-    setIsAuthenticated(false);
-    setCurrentEmail('');
-    sessionStorage.removeItem('isAdmin');
-    sessionStorage.removeItem('adminEmail');
-  };
+  // Ensure the old logout is removed since we moved it up
 
   const addAdmin = async (email) => {
     const secondaryApp = getApps().find(app => app.name === 'Secondary') 
@@ -133,19 +160,69 @@ export const AuthProvider = ({ children }) => {
     await remove(ref(database, `admins/${id}`));
   };
 
-  const updatePassword = async (adminId, newPassword) => {
+  const updatePassword = async (adminId, newPassword, securityQuestion, securityAnswer, ip) => {
     if (auth.currentUser) {
       await authUpdatePassword(auth.currentUser, newPassword);
     }
+    const snap = await get(ref(database, `admins/${adminId}`));
+    const data = snap.val() || {};
+    const recognizedIps = data.recognizedIps || [];
+    if (ip && !recognizedIps.includes(ip)) recognizedIps.push(ip);
+
     await update(ref(database, `admins/${adminId}`), {
-      isTemp: false
+      isTemp: false,
+      securityQuestion,
+      securityAnswer: securityAnswer.toLowerCase().trim(),
+      recognizedIps
     });
     setIsAuthenticated(true);
     sessionStorage.setItem('isAdmin', 'true');
   };
 
+  const setupSecurityQuestion = async (adminId, securityQuestion, securityAnswer, ip) => {
+    const snap = await get(ref(database, `admins/${adminId}`));
+    const data = snap.val() || {};
+    const recognizedIps = data.recognizedIps || [];
+    if (ip && !recognizedIps.includes(ip)) recognizedIps.push(ip);
+
+    await update(ref(database, `admins/${adminId}`), {
+      securityQuestion,
+      securityAnswer: securityAnswer.toLowerCase().trim(),
+      recognizedIps
+    });
+    setIsAuthenticated(true);
+    sessionStorage.setItem('isAdmin', 'true');
+  };
+
+  const verifySecurityChallenge = async (adminId, answer, ip) => {
+    const snap = await get(ref(database, `admins/${adminId}`));
+    const data = snap.val();
+    if (!data || !data.securityAnswer) return false;
+
+    if (data.securityAnswer === answer.toLowerCase().trim()) {
+      const recognizedIps = data.recognizedIps || [];
+      if (ip && !recognizedIps.includes(ip)) recognizedIps.push(ip);
+      await update(ref(database, `admins/${adminId}`), {
+        recognizedIps
+      });
+      setIsAuthenticated(true);
+      sessionStorage.setItem('isAdmin', 'true');
+      return true;
+    }
+    return false;
+  };
+
+  const getSecurityQuestion = async (adminId) => {
+    const snap = await get(ref(database, `admins/${adminId}`));
+    const data = snap.val();
+    return data?.securityQuestion || '';
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, currentEmail, admins, login, logout, addAdmin, removeAdmin, updatePassword }}>
+    <AuthContext.Provider value={{ 
+      isAuthenticated, currentEmail, admins, login, logout, addAdmin, removeAdmin, 
+      updatePassword, setupSecurityQuestion, verifySecurityChallenge, getSecurityQuestion 
+    }}>
       {children}
     </AuthContext.Provider>
   );

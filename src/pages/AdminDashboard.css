@@ -85,3 +85,27 @@
   padding: 0.25rem 0.75rem;
   font-size: 0.85rem;
 }
+
+@media (max-width: 600px) {
+  .request-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+  
+  .request-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+  
+  .request-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .request-actions .btn {
+    flex: 1;
+    text-align: center;
+  }
+}
