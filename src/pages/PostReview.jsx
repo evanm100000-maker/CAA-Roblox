@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const PostReview = () => {
   const [formData, setFormData] = useState({
     airlineName: '',
     description: '',
-    imageUrl: '',
     discordLink: '',
     safety: '5.0',
     realism: '5.0',
     professionalism: '5.0',
     overall: 'Great'
   });
+  
+  const [imageFile, setImageFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { addReview } = useData();
   const navigate = useNavigate();
@@ -25,10 +29,41 @@ const PostReview = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleFileChange = (e) => {
+    if (e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    addReview(formData);
-    navigate('/');
+    setIsSubmitting(true);
+    
+    let uploadedImageUrl = '';
+    
+    try {
+      if (imageFile) {
+        // Create a reference to the file in Firebase Storage
+        const imageRef = ref(storage, `reviews/${Date.now()}_${imageFile.name}`);
+        // Upload the file
+        await uploadBytes(imageRef, imageFile);
+        // Get the download URL
+        uploadedImageUrl = await getDownloadURL(imageRef);
+      }
+
+      await addReview({
+        ...formData,
+        imageUrl: uploadedImageUrl
+      });
+      
+      alert('Review posted successfully!');
+      navigate('/admin');
+    } catch (error) {
+      console.error("Error posting review:", error);
+      alert('Failed to post review. Ensure Firebase Storage is enabled and rules allow writing.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -52,17 +87,19 @@ const PostReview = () => {
               />
             </div>
             
-            <div className="form-group mb-0">
-              <label htmlFor="imageUrl" className="form-label">Image URL</label>
+            <div className="form-group">
+              <label htmlFor="imageUpload" className="form-label">
+                Upload Image
+              </label>
               <input
-                type="url"
-                id="imageUrl"
-                name="imageUrl"
+                type="file"
+                id="imageUpload"
+                accept="image/*"
                 className="form-input"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                placeholder="https://example.com/image.jpg"
+                onChange={handleFileChange}
+                style={{ padding: '0.6rem' }}
               />
+              {imageFile && <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem', display: 'block'}}>Selected: {imageFile.name}</span>}
             </div>
             
             <div className="form-group mb-0">
@@ -145,8 +182,8 @@ const PostReview = () => {
             
           </div>
           
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-            Publish Review
+          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isSubmitting}>
+            {isSubmitting ? 'Uploading & Posting...' : 'Post Review'}
           </button>
         </form>
       </div>
