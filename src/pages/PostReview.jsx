@@ -17,6 +17,7 @@ const PostReview = () => {
   
   const [imageFile, setImageFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   
   const { addReview } = useData();
   const navigate = useNavigate();
@@ -51,20 +52,50 @@ const PostReview = () => {
         uploadedImageUrl = await getDownloadURL(imageRef);
       }
 
-      await addReview({
-        ...formData,
-        imageUrl: uploadedImageUrl
-      });
+      // Timeout to prevent infinite hanging if Firebase fails silently
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout")), 10000)
+      );
+
+      await Promise.race([
+        addReview({
+          ...formData,
+          imageUrl: uploadedImageUrl
+        }),
+        timeoutPromise
+      ]);
       
-      alert('Review posted successfully!');
-      navigate('/admin');
+      setIsSuccess(true);
     } catch (error) {
       console.error("Error posting review:", error);
-      alert('Failed to post review. Firebase is blocking the upload. You MUST update your Firebase Storage and Firestore Security Rules to "allow read, write: if true;" as instructed.');
+      if (error.message === "Timeout") {
+        alert('Upload timed out. Firebase is not responding. Please check your Firebase Database rules and internet connection.');
+      } else {
+        alert('Failed to post review. Firebase is blocking the upload. You MUST update your Firebase Storage and Firestore Security Rules to "allow read, write: if true;" as instructed.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isSuccess) {
+    return (
+      <div className="container animate-fade-in" style={{ maxWidth: '800px', textAlign: 'center', padding: '6rem 2rem' }}>
+        <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '4rem 2rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)' }}>
+          <div style={{ width: '80px', height: '80px', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h1 className="section-title mb-4">Report Uploaded!</h1>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', fontSize: '1.1rem' }}>
+            Your airline review has been successfully published to the database.
+          </p>
+          <button onClick={() => navigate('/')} className="btn btn-primary btn-lg">
+            Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container animate-fade-in" style={{ maxWidth: '800px' }}>
