@@ -11,14 +11,9 @@ const AdminDashboard = () => {
     removeSecondaryRequest,
     registeredAirlines,
     removeRegisteredAirline,
-    updateRegisteredAirline,
     reviews,
     deleteReview
   } = useData();
-
-  // Partition registered airlines into UnReviewed and Reviewed based on manual flag
-  const unreviewedAirlines = registeredAirlines.filter(airline => !airline.isReviewed);
-  const reviewedAirlines = registeredAirlines.filter(airline => airline.isReviewed);
 
   return (
     <div className="container animate-fade-in dashboard-container">
@@ -76,15 +71,15 @@ const AdminDashboard = () => {
           )}
         </div>
 
-        {/* UnReviewed Registered Airlines */}
+        {/* Registered Airlines */}
         <div className="card dashboard-card">
-          <h2 className="dashboard-card-title">Registered Airlines <span style={{ color: '#ef4444' }}>(UnReviewed)</span></h2>
+          <h2 className="dashboard-card-title">Registered Airlines</h2>
           
-          {unreviewedAirlines.length === 0 ? (
-            <p className="empty-message">No unreviewed registered airlines.</p>
+          {registeredAirlines.length === 0 ? (
+            <p className="empty-message">No registered airlines yet.</p>
           ) : (
             <div className="request-list">
-              {unreviewedAirlines.map(airline => (
+              {registeredAirlines.map(airline => (
                 <div key={airline.id} className="request-item">
                   <div className="request-header">
                     <h3 className="request-airline">{airline.airlineName}</h3>
@@ -92,32 +87,6 @@ const AdminDashboard = () => {
                   </div>
                   <div className="request-actions">
                     <a href={airline.discordLink} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">Discord</a>
-                    <button onClick={async () => await updateRegisteredAirline(airline.id, { isReviewed: true })} className="btn btn-outline btn-sm" style={{ borderColor: '#10b981', color: '#10b981' }}>Mark as Reviewed</button>
-                    <button onClick={() => removeRegisteredAirline(airline.id)} className="btn btn-danger btn-sm">Remove</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Reviewed Registered Airlines */}
-        <div className="card dashboard-card">
-          <h2 className="dashboard-card-title">Registered Airlines <span style={{ color: '#10b981' }}>(Reviewed)</span></h2>
-          
-          {reviewedAirlines.length === 0 ? (
-            <p className="empty-message">No reviewed registered airlines.</p>
-          ) : (
-            <div className="request-list">
-              {reviewedAirlines.map(airline => (
-                <div key={airline.id} className="request-item">
-                  <div className="request-header">
-                    <h3 className="request-airline">{airline.airlineName}</h3>
-                    <span className="request-date">Approved: {airline.approvedDate ? new Date(airline.approvedDate).toLocaleDateString() : 'N/A'}</span>
-                  </div>
-                  <div className="request-actions">
-                    <a href={airline.discordLink} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">Discord</a>
-                    <button onClick={async () => await updateRegisteredAirline(airline.id, { isReviewed: false })} className="btn btn-outline btn-sm" style={{ borderColor: '#ef4444', color: '#ef4444' }}>UnReview</button>
                     <button onClick={() => removeRegisteredAirline(airline.id)} className="btn btn-danger btn-sm">Remove</button>
                   </div>
                 </div>
