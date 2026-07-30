@@ -112,10 +112,16 @@ const AdminDashboard = () => {
               {registeredAirlines.map(airline => (
                 <div key={airline.id} className="request-item" style={{ borderLeft: airline.isReviewed ? '4px solid #10b981' : 'none' }}>
                   <div className="request-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <h3 className="request-airline">{airline.airlineName}</h3>
-                      {airline.isReviewed && <span style={{ backgroundColor: '#10b981', color: 'white', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 'bold' }}>Reviewed</span>}
-                    </div>
+                    <h3 className="request-airline" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      {airline.airlineName}
+                      {airline.isReviewed && (
+                        <span style={{ color: '#10b981', display: 'inline-flex', alignItems: 'center' }} title="Reviewed">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                      )}
+                    </h3>
                     <span className="request-date">Approved: {airline.approvedDate ? new Date(airline.approvedDate).toLocaleDateString() : 'N/A'}</span>
                   </div>
                   <div className="request-actions">

@@ -22,8 +22,8 @@ export const DataProvider = ({ children }) => {
   const objectToArray = (obj) => {
     if (!obj) return [];
     return Object.keys(obj).map(key => ({
-      id: key,
-      ...obj[key]
+      ...obj[key],
+      id: key
     })).sort((a, b) => {
       // Sort descending by createdAt
       const timeA = a.createdAt || 0;
