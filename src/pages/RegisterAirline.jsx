@@ -7,6 +7,7 @@ const RegisterAirline = () => {
     airlineName: '',
     discordLink: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const { addAirlineRequest } = useData();
   const navigate = useNavigate();
@@ -16,17 +17,35 @@ const RegisterAirline = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    addAirlineRequest({
-      ...formData,
-      status: 'pending',
-      date: new Date().toISOString()
-    });
-    setSubmitted(true);
-    setTimeout(() => {
-      navigate('/');
-    }, 3000);
+    setIsSubmitting(true);
+    
+    try {
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Timeout")), 10000)
+      );
+
+      await Promise.race([
+        addAirlineRequest({
+          ...formData,
+          status: 'pending',
+          date: new Date().toISOString()
+        }),
+        timeoutPromise
+      ]);
+
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Error submitting request:", error);
+      if (error.message === "Timeout") {
+        alert('Request timed out. Firebase is not responding. Please check your internet connection or try again later.');
+      } else {
+        alert('Failed to submit request. Firebase is blocking the upload. Ensure your database rules are correct.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -34,10 +53,13 @@ const RegisterAirline = () => {
       <h1 className="section-title text-center mb-6" style={{ marginBottom: '2rem' }}>Register Your Airline</h1>
       
       {submitted ? (
-        <div className="card text-center" style={{ padding: '3rem' }}>
-          <h2 style={{ color: 'var(--accent-color)', marginBottom: '1rem' }}>Registration Submitted!</h2>
-          <p>Your airline has been registered for review. Our staff will process your request shortly.</p>
-          <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Redirecting to home...</p>
+        <div className="card text-center" style={{ padding: '4rem 2rem' }}>
+          <div style={{ width: '80px', height: '80px', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h2 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Registration Submitted!</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Your airline has been registered for review. Our staff will process your request shortly.</p>
+          <button onClick={() => navigate('/')} className="btn btn-primary">Return Home</button>
         </div>
       ) : (
         <div className="card">
@@ -70,8 +92,8 @@ const RegisterAirline = () => {
               />
             </div>
             
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
-              Submit Registration
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit Registration'}
             </button>
           </form>
         </div>
