@@ -206,18 +206,24 @@ const AdminDashboard = () => {
           <div className="request-list">
             {/* Primary Owner is always shown first */}
             <div className="request-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div className="request-header" style={{ marginBottom: 0 }}>
+              <div className="request-header" style={{ marginBottom: 0, display: 'flex', alignItems: 'center' }}>
                 <h3 className="request-airline">evanm.100000@gmail.com</h3>
                 <span className="request-date" style={{ marginLeft: '1rem' }}>Primary Owner</span>
+                {admins.find(a => a.email.toLowerCase() === 'evanm.100000@gmail.com')?.lastLoginIp && (
+                   <span style={{ marginLeft: '1rem', color: '#ef4444', fontSize: '0.8rem' }}>Last IP: {admins.find(a => a.email.toLowerCase() === 'evanm.100000@gmail.com').lastLoginIp}</span>
+                )}
               </div>
               <button className="btn btn-outline btn-sm" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>System</button>
             </div>
 
             {admins.filter(a => a.email.toLowerCase() !== 'evanm.100000@gmail.com').map(admin => (
               <div key={admin.id} className="request-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div className="request-header" style={{ marginBottom: 0 }}>
+                <div className="request-header" style={{ marginBottom: 0, display: 'flex', alignItems: 'center' }}>
                   <h3 className="request-airline">{admin.email}</h3>
                   {admin.isTemp && <span style={{ marginLeft: '0.5rem', backgroundColor: '#eab308', color: 'black', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.7rem', fontWeight: 'bold' }}>Temp Password</span>}
+                  {admin.lastLoginIp && (
+                     <span style={{ marginLeft: '1rem', color: '#ef4444', fontSize: '0.8rem' }}>Last IP: {admin.lastLoginIp}</span>
+                  )}
                 </div>
                 <button onClick={() => removeAdmin(admin.id)} className="btn btn-danger btn-sm">Remove</button>
               </div>

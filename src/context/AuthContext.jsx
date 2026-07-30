@@ -62,6 +62,24 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: 'You are not registered as an administrator.' };
       }
 
+      let userIp = 'Unknown';
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        userIp = ipData.ip;
+      } catch (e) {
+        console.error("Failed to fetch IP", e);
+      }
+
+      try {
+        await update(ref(database, `admins/${uid}`), {
+          lastLoginIp: userIp,
+          lastLoginDate: new Date().toISOString()
+        });
+      } catch(e) {
+        console.error("Failed to update admin IP", e);
+      }
+
       if (adminData.isTemp) {
         setCurrentEmail(email);
         sessionStorage.setItem('adminEmail', email);
