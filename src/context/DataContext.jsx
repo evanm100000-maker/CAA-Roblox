@@ -12,7 +12,7 @@ export const DataProvider = ({ children }) => {
         imageUrl: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&q=80&w=800',
         safety: 5,
         realism: 4,
-        aircraft: 4.5,
+        professionalism: 4.5,
         overall: 'Great',
         discordLink: 'https://discord.gg/flyroblox'
       }

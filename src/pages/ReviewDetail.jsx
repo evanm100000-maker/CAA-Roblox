@@ -109,8 +109,8 @@ const ReviewDetail = () => {
               <div className="rating-stars" style={{ gap: '0.25rem' }}>{renderStars(review.realism)}</div>
             </div>
             <div className="rating-item">
-              <span className="rating-label" style={{ fontSize: '1rem' }}>Aircraft/Airport</span>
-              <div className="rating-stars" style={{ gap: '0.25rem' }}>{renderStars(review.aircraft)}</div>
+              <span className="rating-label" style={{ fontSize: '1rem' }}>Professionalism</span>
+              <div className="rating-stars" style={{ gap: '0.25rem' }}>{renderStars(review.professionalism)}</div>
             </div>
           </div>
           

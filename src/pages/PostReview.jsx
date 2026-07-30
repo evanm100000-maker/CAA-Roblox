@@ -10,7 +10,7 @@ const PostReview = () => {
     discordLink: '',
     safety: '5.0',
     realism: '5.0',
-    aircraft: '5.0',
+    professionalism: '5.0',
     overall: 'Great'
   });
   
@@ -95,7 +95,7 @@ const PostReview = () => {
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             
-            {['safety', 'realism', 'aircraft'].map(ratingField => (
+            {['safety', 'realism', 'professionalism'].map(ratingField => (
               <div key={ratingField} className="form-group mb-0">
                 <label htmlFor={ratingField} className="form-label" style={{ textTransform: 'capitalize' }}>
                   {ratingField}

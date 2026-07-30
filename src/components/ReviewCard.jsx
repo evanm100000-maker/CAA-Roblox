@@ -71,8 +71,8 @@ const ReviewCard = ({ review }) => {
             <div className="rating-stars">{renderStars(review.realism)}</div>
           </div>
           <div className="rating-item">
-            <span className="rating-label">Aircraft/Airport</span>
-            <div className="rating-stars">{renderStars(review.aircraft)}</div>
+            <span className="rating-label">Professionalism</span>
+            <div className="rating-stars">{renderStars(review.professionalism)}</div>
           </div>
         </div>
         

@@ -123,16 +123,26 @@
 
 .dropdown-menu {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 0.5rem);
   right: 0;
-  margin-top: 0.5rem;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  min-width: 220px;
+  box-shadow: var(--shadow-md);
   padding: 0.5rem 0;
+  min-width: 200px;
+  z-index: 60;
+  margin-top: 0;
   overflow: hidden;
+}
+
+.dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -0.5rem;
+  left: 0;
+  right: 0;
+  height: 0.5rem;
 }
 
 .dropdown-item {

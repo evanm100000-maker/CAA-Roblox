@@ -18,8 +18,7 @@ const Home = () => {
         <div className="container hero-content">
           <h1 className="hero-title">Official Airline Certification & Review</h1>
           <p className="hero-subtitle">
-            The Civil Aviation Authority is the leading regulatory and review body for the Roblox aviation sector. 
-            We ensure unparalleled standards of safety, realism, and operational excellence across virtual skies.
+            Civil Aviation Authority Roblox is the leading airline evaluation group on the platform, specialising in assessing carriers on key standards such as safety, professionalism, and realism.
           </p>
           <div className="hero-actions">
             <Link to="/request-review" className="btn btn-primary btn-lg">
