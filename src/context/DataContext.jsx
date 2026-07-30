@@ -72,23 +72,14 @@ export const DataProvider = ({ children }) => {
 
   // Review actions
   const addReview = async (review) => {
-    try {
-      await addDoc(collection(db, 'reviews'), {
-        ...review,
-        createdAt: serverTimestamp()
-      });
-    } catch (e) {
-      console.error("Error adding review: ", e);
-      alert("Failed to add review to database. Check console/permissions.");
-    }
+    await addDoc(collection(db, 'reviews'), {
+      ...review,
+      createdAt: serverTimestamp()
+    });
   };
 
   const deleteReview = async (id) => {
-    try {
-      await deleteDoc(doc(db, 'reviews', id));
-    } catch (e) {
-      console.error("Error deleting review: ", e);
-    }
+    await deleteDoc(doc(db, 'reviews', id));
   };
 
   // New Airline Request actions

@@ -60,7 +60,7 @@ const PostReview = () => {
       navigate('/admin');
     } catch (error) {
       console.error("Error posting review:", error);
-      alert('Failed to post review. Ensure Firebase Storage is enabled and rules allow writing.');
+      alert('Failed to post review. Firebase is blocking the upload. You MUST update your Firebase Storage and Firestore Security Rules to "allow read, write: if true;" as instructed.');
     } finally {
       setIsSubmitting(false);
     }
