@@ -11,18 +11,14 @@ const AdminDashboard = () => {
     removeSecondaryRequest,
     registeredAirlines,
     removeRegisteredAirline,
+    updateRegisteredAirline,
     reviews,
     deleteReview
   } = useData();
 
-  // Partition registered airlines into UnReviewed and Reviewed based on existing reviews
-  const unreviewedAirlines = registeredAirlines.filter(airline => 
-    !reviews.some(review => review.airlineName.toLowerCase() === airline.airlineName.toLowerCase())
-  );
-
-  const reviewedAirlines = registeredAirlines.filter(airline => 
-    reviews.some(review => review.airlineName.toLowerCase() === airline.airlineName.toLowerCase())
-  );
+  // Partition registered airlines into UnReviewed and Reviewed based on manual flag
+  const unreviewedAirlines = registeredAirlines.filter(airline => !airline.isReviewed);
+  const reviewedAirlines = registeredAirlines.filter(airline => airline.isReviewed);
 
   return (
     <div className="container animate-fade-in dashboard-container">
@@ -96,6 +92,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="request-actions">
                     <a href={airline.discordLink} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">Discord</a>
+                    <button onClick={() => updateRegisteredAirline(airline.id, { isReviewed: true })} className="btn btn-outline btn-sm" style={{ borderColor: '#10b981', color: '#10b981' }}>Mark as Reviewed</button>
                     <button onClick={() => removeRegisteredAirline(airline.id)} className="btn btn-danger btn-sm">Remove</button>
                   </div>
                 </div>
@@ -120,6 +117,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="request-actions">
                     <a href={airline.discordLink} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">Discord</a>
+                    <button onClick={() => updateRegisteredAirline(airline.id, { isReviewed: false })} className="btn btn-outline btn-sm" style={{ borderColor: '#ef4444', color: '#ef4444' }}>UnReview</button>
                     <button onClick={() => removeRegisteredAirline(airline.id)} className="btn btn-danger btn-sm">Remove</button>
                   </div>
                 </div>
