@@ -5,21 +5,28 @@ import { ref, onValue, set, remove, update, get } from 'firebase/database';
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
-  signOut, 
+  signOut,
   updatePassword as authUpdatePassword,
-  getAuth
+  getAuth,
+  setPersistence,
+  browserSessionPersistence
 } from 'firebase/auth';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('isAdmin') === 'true';
+    return sessionStorage.getItem('isAdmin') === 'true';
   });
   const [currentEmail, setCurrentEmail] = useState(() => {
-    return localStorage.getItem('adminEmail') || '';
+    return sessionStorage.getItem('adminEmail') || '';
   });
   const [admins, setAdmins] = useState([]);
+
+  useEffect(() => {
+    // Force Firebase Auth to clear session when window is closed
+    setPersistence(auth, browserSessionPersistence).catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -44,33 +51,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      let userCredential;
-      try {
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        // Auto-create owner account in Auth if they attempt first-time login
-        if (
-          email.toLowerCase() === 'evanm.100000@gmail.com' && 
-          password === 'Michelle11!' && 
-          (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')
-        ) {
-          userCredential = await createUserWithEmailAndPassword(auth, 'evanm.100000@gmail.com', 'Michelle11!');
-          const uid = userCredential.user.uid;
-          await set(ref(database, `admins/${uid}`), {
-            email: 'evanm.100000@gmail.com',
-            isTemp: false
-          });
-        } else {
-          throw err;
-        }
-      }
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
 
-      const user = userCredential.user;
-      
-      // Verify if user is in database admins list
-      const snap = await get(ref(database, `admins/${user.uid}`));
+      // Verify admin entry in database
+      const snap = await get(ref(database, `admins/${uid}`));
       const adminData = snap.val();
-
       if (!adminData) {
         await signOut(auth);
         return { success: false, error: 'You are not registered as an administrator.' };
@@ -78,21 +64,21 @@ export const AuthProvider = ({ children }) => {
 
       if (adminData.isTemp) {
         setCurrentEmail(email);
-        localStorage.setItem('adminEmail', email);
-        return { success: true, isTemp: true, adminId: user.uid };
+        sessionStorage.setItem('adminEmail', email);
+        return { success: true, isTemp: true, adminId: uid };
       }
 
       setIsAuthenticated(true);
       setCurrentEmail(email);
-      localStorage.setItem('isAdmin', 'true');
-      localStorage.setItem('adminEmail', email);
+      sessionStorage.setItem('isAdmin', 'true');
+      sessionStorage.setItem('adminEmail', email);
       return { success: true, isTemp: false };
-
     } catch (err) {
-      console.error("Login failed:", err);
+      console.error('Login failed:', err);
       let errorMsg = 'Invalid credentials';
       if (err.code === 'auth/invalid-email') errorMsg = 'Invalid email address';
       if (err.code === 'auth/user-disabled') errorMsg = 'This account has been disabled';
+      if (err.code === 'auth/wrong-password') errorMsg = 'Wrong password';
       return { success: false, error: errorMsg };
     }
   };
@@ -105,8 +91,8 @@ export const AuthProvider = ({ children }) => {
     }
     setIsAuthenticated(false);
     setCurrentEmail('');
-    localStorage.removeItem('isAdmin');
-    localStorage.removeItem('adminEmail');
+    sessionStorage.removeItem('isAdmin');
+    sessionStorage.removeItem('adminEmail');
   };
 
   const addAdmin = async (email) => {
@@ -137,7 +123,7 @@ export const AuthProvider = ({ children }) => {
       isTemp: false
     });
     setIsAuthenticated(true);
-    localStorage.setItem('isAdmin', 'true');
+    sessionStorage.setItem('isAdmin', 'true');
   };
 
   return (
