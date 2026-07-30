@@ -15,7 +15,16 @@ import SecurityChallenge from './pages/SecurityChallenge';
 import { useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAuthLoading } = useAuth();
+  
+  if (isAuthLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <p>Verifying authentication...</p>
+      </div>
+    );
+  }
+  
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }

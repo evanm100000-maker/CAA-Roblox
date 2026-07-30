@@ -15,17 +15,66 @@ import {
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return sessionStorage.getItem('isAdmin') === 'true';
-  });
-  const [currentEmail, setCurrentEmail] = useState(() => {
-    return sessionStorage.getItem('adminEmail') || '';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [currentEmail, setCurrentEmail] = useState('');
   const [admins, setAdmins] = useState([]);
 
   useEffect(() => {
     // Force Firebase Auth to clear session when window is closed
     setPersistence(auth, browserSessionPersistence).catch(console.error);
+
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        setIsAuthenticated(false);
+        setCurrentEmail('');
+        setIsAuthLoading(false);
+        return;
+      }
+
+      // Check if they are an admin
+      const snap = await get(ref(database, `admins/${user.uid}`));
+      const data = snap.val();
+      if (!data) {
+        await signOut(auth);
+        setIsAuthenticated(false);
+        setCurrentEmail('');
+        setIsAuthLoading(false);
+        return;
+      }
+
+      // Fetch their current IP for validation
+      let userIp = 'Unknown';
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        userIp = ipData.ip;
+      } catch (e) {
+        try {
+          const ipRes = await fetch('https://ipapi.co/json/');
+          const ipData = await ipRes.json();
+          userIp = ipData.ip;
+        } catch (e2) {}
+      }
+
+      const recognizedIps = data.recognizedIps || [];
+
+      // If they are missing setup or unrecognized IP, don't consider them fully authenticated
+      // (The login flow handles routing them to the correct challenge page)
+      if (data.isTemp || !data.securityQuestion || (!recognizedIps.includes(userIp) && userIp !== 'Unknown')) {
+        setIsAuthenticated(false);
+        setCurrentEmail(data.email);
+        setIsAuthLoading(false);
+        return;
+      }
+
+      // All good, fully authenticated session restored
+      setIsAuthenticated(true);
+      setCurrentEmail(data.email);
+      setIsAuthLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const logout = async () => {
@@ -34,10 +83,6 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error(err);
     }
-    setIsAuthenticated(false);
-    setCurrentEmail('');
-    sessionStorage.removeItem('isAdmin');
-    sessionStorage.removeItem('adminEmail');
   };
 
   useEffect(() => {
@@ -76,7 +121,6 @@ export const AuthProvider = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
 
-      // Verify admin entry in database
       const snap = await get(ref(database, `admins/${uid}`));
       const adminData = snap.val();
       if (!adminData) {
@@ -90,14 +134,11 @@ export const AuthProvider = ({ children }) => {
         const ipData = await ipRes.json();
         userIp = ipData.ip;
       } catch (e) {
-        console.error("Failed to fetch IP from ipify, trying fallback...", e);
         try {
           const ipRes = await fetch('https://ipapi.co/json/');
           const ipData = await ipRes.json();
           userIp = ipData.ip;
-        } catch (e2) {
-          console.error("Failed to fetch IP from fallback api", e2);
-        }
+        } catch (e2) {}
       }
 
       try {
@@ -105,35 +146,22 @@ export const AuthProvider = ({ children }) => {
           lastLoginIp: userIp,
           lastLoginDate: new Date().toISOString()
         });
-      } catch(e) {
-        console.error("Failed to update admin IP", e);
-      }
+      } catch(e) {}
 
       if (adminData.isTemp) {
-        setCurrentEmail(email);
-        sessionStorage.setItem('adminEmail', email);
         return { success: true, isTemp: true, adminId: uid };
       }
 
-      const recognizedIps = adminData.recognizedIps || [];
       const hasSecurityQuestion = !!adminData.securityQuestion;
-
       if (!hasSecurityQuestion) {
-        setCurrentEmail(email);
-        sessionStorage.setItem('adminEmail', email);
         return { success: true, requiresSetup: true, adminId: uid };
       }
 
-      if (!recognizedIps.includes(userIp)) {
-        setCurrentEmail(email);
-        sessionStorage.setItem('adminEmail', email);
+      const recognizedIps = adminData.recognizedIps || [];
+      if (!recognizedIps.includes(userIp) && userIp !== 'Unknown') {
         return { success: true, requiresChallenge: true, adminId: uid, ip: userIp };
       }
 
-      setIsAuthenticated(true);
-      setCurrentEmail(email);
-      sessionStorage.setItem('isAdmin', 'true');
-      sessionStorage.setItem('adminEmail', email);
       return { success: true, isTemp: false };
     } catch (err) {
       console.error('Login failed:', err);
@@ -144,8 +172,6 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: errorMsg };
     }
   };
-
-  // Ensure the old logout is removed since we moved it up
 
   const addAdmin = async (email) => {
     const secondaryApp = getApps().find(app => app.name === 'Secondary') 
@@ -183,7 +209,6 @@ export const AuthProvider = ({ children }) => {
       recognizedIps
     });
     setIsAuthenticated(true);
-    sessionStorage.setItem('isAdmin', 'true');
   };
 
   const setupSecurityQuestion = async (adminId, securityQuestion, securityAnswer, ip) => {
@@ -198,7 +223,6 @@ export const AuthProvider = ({ children }) => {
       recognizedIps
     });
     setIsAuthenticated(true);
-    sessionStorage.setItem('isAdmin', 'true');
   };
 
   const verifySecurityChallenge = async (adminId, answer, ip) => {
@@ -213,7 +237,6 @@ export const AuthProvider = ({ children }) => {
         recognizedIps
       });
       setIsAuthenticated(true);
-      sessionStorage.setItem('isAdmin', 'true');
       return true;
     }
     return false;
@@ -227,7 +250,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ 
-      isAuthenticated, currentEmail, admins, login, logout, addAdmin, removeAdmin, 
+      isAuthenticated, isAuthLoading, currentEmail, admins, login, logout, addAdmin, removeAdmin, 
       updatePassword, setupSecurityQuestion, verifySecurityChallenge, getSecurityQuestion 
     }}>
       {children}
